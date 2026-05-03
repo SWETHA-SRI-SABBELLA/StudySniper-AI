@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>StudySniper — AI Study OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#09090F; --surface:#111118; --card:#16161F;
+  --border:rgba(255,255,255,0.06);
+  --accent:#7C6EFF; --accent2:#00E5B4;
+  --danger:#FF4C5E; --warn:#FFB344; --safe:#34D399;
+  --muted:#6B7280; --text:#F1F0FF; --sub:#9B97B8;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+::selection{background:#7C6EFF30;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:#7C6EFF40;border-radius:10px;}
+
+/* ── Utility ── */
+.font-display{font-family:'Syne',sans-serif;}
+.font-mono{font-family:'JetBrains Mono',monospace;}
+.gradient-text{background:linear-gradient(135deg,#7C6EFF,#00E5B4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.gradient-warm{background:linear-gradient(135deg,#FFB344,#FF4C5E);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.glass{background:rgba(22,22,31,0.7);backdrop-filter:blur(20px);border:1px solid var(--border);}
+.glow{box-shadow:0 0 60px rgba(124,110,255,0.2);}
+.noise::after{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:0.03;pointer-events:none;z-index:0;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:500;font-size:15px;cursor:pointer;border:none;transition:all 0.2s;}
+.btn-primary{background:linear-gradient(135deg,#7C6EFF,#6358E8);color:#fff;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(124,110,255,0.4);}
+.btn-ghost{background:rgba(255,255,255,0.04);color:var(--sub);border:1px solid rgba(255,255,255,0.08);}
+.btn-ghost:hover{background:rgba(255,255,255,0.07);color:var(--text);}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:100px;font-size:12px;font-weight:500;}
+.tag-accent{background:rgba(124,110,255,0.12);color:#A99EFF;border:1px solid rgba(124,110,255,0.2);}
+.tag-safe{background:rgba(52,211,153,0.1);color:#6EEAB3;border:1px solid rgba(52,211,153,0.2);}
+.tag-warn{background:rgba(255,179,68,0.1);color:#FFD07A;border:1px solid rgba(255,179,68,0.2);}
+.progress-track{height:4px;background:rgba(255,255,255,0.06);border-radius:100px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,#7C6EFF,#00E5B4);}
+.card-hover{transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;}
+.card-hover:hover{transform:translateY(-3px);border-color:rgba(124,110,255,0.2);box-shadow:0 12px 40px rgba(0,0,0,0.3);}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;}
+.dot.anim{animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.scan-line{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,110,255,0.4),transparent);animation:scan 4s linear infinite;pointer-events:none;}
+@keyframes scan{0%{top:0%;opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{top:100%;opacity:0;}}
+.float{animation:float 5s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.grid-bg{background-image:linear-gradient(rgba(124,110,255,0.04)1px,transparent 1px),linear-gradient(90deg,rgba(124,110,255,0.04)1px,transparent 1px);background-size:40px 40px;}
+.reveal{opacity:0;transform:translateY(24px);transition:all 0.7s cubic-bezier(0.4,0,0.2,1);}
+.reveal.visible{opacity:1;transform:translateY(0);}
+section{position:relative;}
+
+/* ── Navbar ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:50;padding:20px 0;transition:all 0.3s;}
+nav.scrolled{background:rgba(22,22,31,0.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 0;}
+.nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;}
+.logo{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#7C6EFF,#5B4EFF);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.logo-text{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;letter-spacing:-0.3px;}
+.logo-text span{color:var(--accent);}
+.nav-links{display:flex;gap:32px;}
+.nav-links a{color:var(--sub);font-size:14px;text-decoration:none;transition:color 0.15s;cursor:pointer;}
+.nav-links a:hover{color:var(--text);}
+.nav-cta{display:flex;gap:10px;}
+
+/* ── Hero ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:120px 24px 80px;position:relative;overflow:hidden;}
+.hero-inner{max-width:1200px;margin:0 auto;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;}
+.hero-left{}
+.eyebrow{margin-bottom:24px;}
+.hero-h1{font-family:'Syne',sans-serif;font-size:clamp(40px,5vw,64px);font-weight:800;line-height:1.1;letter-spacing:-1.5px;color:var(--text);margin-bottom:16px;}
+.hero-sub{font-size:18px;color:var(--sub);line-height:1.7;max-width:440px;margin-bottom:32px;}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:36px;}
+.social-proof{display:flex;align-items:center;gap:14px;}
+.avatars{display:flex;}
+.av{width:32px;height:32px;border-radius:50%;border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;margin-left:-8px;}
+.av:first-child{margin-left:0;}
+.proof-text{font-size:12px;color:var(--muted);}
+.proof-text strong{color:var(--sub);}
+.stars{display:flex;gap:2px;margin-bottom:3px;}
+/* ── Hero right — preview card ── */
+.preview-wrap{position:relative;}
+.preview-glow{position:absolute;inset:0;background:#7C6EFF;opacity:0.08;filter:blur(80px);border-radius:50%;pointer-events:none;}
+.preview-card{position:relative;border-radius:20px;overflow:hidden;}
+.browser-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);}
+.br{width:12px;height:12px;border-radius:50%;}
+.url-bar{flex:1;height:22px;background:rgba(255,255,255,0.04);border-radius:6px;display:flex;align-items:center;padding:0 10px;margin-left:10px;}
+.url-bar span{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+.preview-body{padding:16px;}
+.exam-banner{background:rgba(255,76,94,0.08);border:1px solid rgba(255,76,94,0.2);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+.eb-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:#FF7A87;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
+.eb-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;}
+.eb-title span{color:#FF4C5E;}
+.eb-score{text-align:center;}
+.eb-pct{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#FF4C5E;line-height:1;}
+.eb-ready{font-size:10px;color:var(--muted);margin-top:3px;}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.pill{font-size:10px;padding:3px 10px;border-radius:100px;border:1px solid;}
+.topic-bars{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+.tb-row{}
+.tb-head{display:flex;justify-content:space-between;margin-bottom:5px;}
+.tb-name{font-size:11px;color:var(--sub);}
+.tb-pct{font-family:'JetBrains Mono',monospace;font-size:11px;}
+.ai-strip{background:rgba(124,110,255,0.08);border:1px solid rgba(124,110,255,0.15);border-radius:12px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px;}
+.ai-icon{font-size:16px;line-height:1;flex-shrink:0;margin-top:2px;}
+.ai-label{font-size:10px;color:#A99EFF;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;}
+.ai-text{font-size:11px;color:var(--sub);line-height:1.5;}
+
+/* ── Stats bar ── */
+.stats-bar{max-width:1200px;margin:40px auto 0;padding:0 24px;}
+.stats-inner{background:rgba(22,22,31,0.7);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:20px;padding:28px 40px;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+.stat{text-align:center;}
+.stat-val{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;letter-spacing:-1px;margin-bottom:4px;}
+.stat-label{font-size:12px;color:var(--muted);line-height:1.4;}
+
+/* ── Section headers ── */
+.section-header{text-align:center;margin-bottom:64px;}
+.section-title{font-family:'Syne',sans-serif;font-size:clamp(32px,4vw,48px);font-weight:800;letter-spacing:-1px;line-height:1.1;margin-bottom:16px;}
+.section-sub{font-size:18px;color:var(--sub);max-width:520px;margin:0 auto;line-height:1.7;}
+.container{max-width:1200px;margin:0 auto;padding:0 24px;}
+.section{padding:96px 0;position:relative;}
+
+/* ── Feature grid ── */
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.feat-card{background:rgba(22,22,31,0.7);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:20px;padding:22px;transition:all 0.2s;cursor:default;}
+.feat-card:hover{border-color:rgba(124,110,255,0.3);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,0.3);}
+.feat-icon-wrap{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px;}
+.feat-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px;}
+.feat-desc{font-size:13px;color:var(--sub);line-height:1.65;margin-bottom:12px;}
+.feat-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.feat-tag{font-size:10px;padding:2px 8px;border-radius:100px;border:1px solid;}
+
+/* ── How it works ── */
+.steps-wrap{position:relative;}
+.step{display:flex;align-items:flex-start;gap:20px;margin-bottom:28px;}
+.step-num-col{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.step-num{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500;flex-shrink:0;}
+.step-line{width:1px;flex:1;background:linear-gradient(to bottom,rgba(124,110,255,0.3),transparent);margin-top:4px;min-height:24px;}
+.step-content{background:rgba(22,22,31,0.7);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:16px;padding:18px 20px;flex:1;transition:all 0.2s;}
+.step-content:hover{border-color:rgba(124,110,255,0.2);}
+.step-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.step-icon{font-size:20px;}
+.step-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;}
+.step-desc{font-size:13px;color:var(--sub);line-height:1.65;}
+.how-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;}
+
+/* ── Gamification ── */
+.gami-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.gami-card{background:rgba(22,22,31,0.7);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:20px;padding:22px;transition:all 0.2s;}
+.gami-card:hover{transform:translateY(-3px);border-color:rgba(124,110,255,0.2);}
+.gami-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;}
+.xp-num{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;background:linear-gradient(135deg,#7C6EFF,#00E5B4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px;line-height:1;}
+.badges-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.badge-item{display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px 6px;border-radius:12px;border:1px solid;}
+.badge-icon{font-size:22px;margin-bottom:5px;}
+.badge-name{font-size:9px;font-weight:500;color:var(--sub);line-height:1.3;}
+.lb-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;margin-bottom:6px;}
+.lb-rank{width:24px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;text-align:center;}
+.lb-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.lb-name{flex:1;font-size:13px;font-weight:500;}
+.lb-xp{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+
+/* ── Testimonials ── */
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.testi-card{background:rgba(22,22,31,0.7);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:20px;padding:22px;display:flex;flex-direction:column;transition:all 0.2s;}
+.testi-card:hover{transform:translateY(-3px);border-color:rgba(124,110,255,0.2);}
+.stars-row{display:flex;gap:3px;margin-bottom:12px;}
+.testi-quote{font-size:13px;color:var(--sub);line-height:1.7;flex:1;margin-bottom:14px;}
+.testi-score-box{background:rgba(124,110,255,0.08);border:1px solid rgba(124,110,255,0.15);border-radius:12px;padding:10px 12px;margin-bottom:14px;}
+.ts-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;background:linear-gradient(135deg,#7C6EFF,#00E5B4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+.ts-label{font-size:10px;color:var(--muted);margin-top:3px;}
+.testi-author{display:flex;align-items:center;gap:10px;}
+.testi-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;}
+.testi-name{font-size:13px;font-weight:500;color:var(--text);}
+.testi-role{font-size:11px;color:var(--muted);}
+
+/* ── CTA section ── */
+.cta-section{padding:80px 24px;}
+.cta-box{max-width:860px;margin:0 auto;background:rgba(22,22,31,0.8);backdrop-filter:blur(30px);border:1px solid rgba(124,110,255,0.18);border-radius:28px;padding:72px;text-align:center;position:relative;overflow:hidden;}
+.cta-title{font-family:'Syne',sans-serif;font-size:clamp(32px,4vw,48px);font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:16px;}
+.cta-sub{font-size:17px;color:var(--sub);line-height:1.7;max-width:540px;margin:0 auto 32px;}
+.cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;}
+.cta-checks{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;}
+.cta-check{font-size:13px;color:var(--muted);}
+
+/* ── Footer ── */
+footer{border-top:1px solid var(--border);padding:60px 24px 30px;}
+.footer-inner{max-width:1200px;margin:0 auto;}
+.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;}
+.footer-brand p{font-size:13px;color:var(--muted);line-height:1.7;margin-top:10px;max-width:220px;}
+.footer-col-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text);margin-bottom:14px;}
+.footer-links{display:flex;flex-direction:column;gap:10px;}
+.footer-links a{font-size:13px;color:var(--muted);text-decoration:none;cursor:pointer;transition:color 0.15s;}
+.footer-links a:hover{color:var(--sub);}
+.footer-bottom{border-top:1px solid var(--border);padding-top:20px;display:flex;justify-content:space-between;align-items:center;}
+.footer-copy{font-size:12px;color:var(--muted);}
+.status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#34D399;animation:pulse 2s infinite;}
+@media(max-width:900px){
+  .hero-inner,.features-grid,.testi-grid,.gami-grid,.how-grid{grid-template-columns:1fr;}
+  .stats-inner{grid-template-columns:repeat(2,1fr);}
+  .footer-grid{grid-template-columns:1fr 1fr;}
+  .hero-right{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <div class="logo">
+      <div class="logo-icon">🎯</div>
+      <div class="logo-text">Study<span>Sniper</span></div>
+    </div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#gamification">Gamification</a>
+      <a href="#testimonials">Stories</a>
+    </div>
+    <div class="nav-cta">
+      <button class="btn btn-ghost" style="padding:10px 20px;font-size:14px;">Sign in</button>
+      <button class="btn btn-primary" style="padding:10px 20px;font-size:14px;" onclick="document.getElementById('cta').scrollIntoView({behavior:'smooth'})">Start free →</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero noise">
+  <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(124,110,255,0.04)1px,transparent 1px),linear-gradient(90deg,rgba(124,110,255,0.04)1px,transparent 1px);background-size:40px 40px;pointer-events:none;"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -20%,rgba(124,110,255,0.2),transparent);pointer-events:none;"></div>
+  <div style="position:absolute;top:25%;left:20%;width:500px;height:500px;background:#7C6EFF;opacity:0.05;border-radius:50%;filter:blur(120px);pointer-events:none;"></div>
+  <div style="position:absolute;bottom:20%;right:20%;width:400px;height:400px;background:#00E5B4;opacity:0.04;border-radius:50%;filter:blur(100px);pointer-events:none;"></div>
+
+  <div class="hero-inner" style="position:relative;z-index:1;">
+    <!-- LEFT -->
+    <div class="hero-left">
+      <div class="eyebrow">
+        <span class="tag tag-accent">
+          <span class="dot anim"></span>
+          AI-powered exam preparation
+        </span>
+      </div>
+
+      <h1 class="hero-h1">Study smarter,<br/><span class="gradient-text" id="typewriter">not harder</span></h1>
+
+      <p class="hero-sub">StudySniper is your AI study operating system. It prioritizes topics, builds smart schedules, detects weaknesses, and adapts when you fall behind — powered by Claude AI.</p>
+
+      <div class="cta-row">
+        <button class="btn btn-primary" style="font-size:16px;padding:14px 32px;" onclick="document.getElementById('cta').scrollIntoView({behavior:'smooth'})">
+          Start for free
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <button class="btn btn-ghost" style="font-size:16px;padding:14px 32px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Watch demo
+        </button>
+      </div>
+
+      <div class="social-proof">
+        <div class="avatars">
+          <div class="av" style="background:#7C6EFF;">S</div>
+          <div class="av" style="background:#FF4C5E;">R</div>
+          <div class="av" style="background:#FFB344;">A</div>
+          <div class="av" style="background:#34D399;">K</div>
+          <div class="av" style="background:#00E5B4;">P</div>
+        </div>
+        <div>
+          <div class="stars">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div class="proof-text">Trusted by <strong>2,400+</strong> students</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Dashboard Preview -->
+    <div class="hero-right preview-wrap">
+      <div class="preview-glow"></div>
+      <div class="glass preview-card glow">
+        <div class="browser-bar">
+          <div class="br" style="background:#FF4C5E80;"></div>
+          <div class="br" style="background:#FFB34480;"></div>
+          <div class="br" style="background:#34D39980;"></div>
+          <div class="url-bar"><span>studysniper.app/dashboard</span></div>
+        </div>
+        <div class="preview-body">
+          <div class="exam-banner">
+            <div>
+              <div class="eb-label">Advanced DBMS</div>
+              <div class="eb-title">Exam in <span>12 days</span></div>
+            </div>
+            <div class="eb-score">
+              <div class="eb-pct">68%</div>
+              <div class="eb-ready">Ready</div>
+            </div>
+          </div>
+          <div class="pills">
+            <span class="pill" style="background:#7C6EFF15;color:#7C6EFF;border-color:#7C6EFF30;">6 Master It</span>
+            <span class="pill" style="background:#FF4C5E15;color:#FF4C5E;border-color:#FF4C5E30;">4 Cram It</span>
+            <span class="pill" style="background:#FFB34415;color:#FFB344;border-color:#FFB34430;">7 Skim It</span>
+            <span class="pill" style="background:#6B728015;color:#6B7280;border-color:#6B728030;">5 Skip It</span>
+          </div>
+          <div class="topic-bars">
+            <div class="tb-row"><div class="tb-head"><span class="tb-name">ACID + Transactions</span><span class="tb-pct" style="color:#FF4C5E;">42%</span></div><div class="progress-track"><div class="progress-fill" style="width:42%;background:#FF4C5E;"></div></div></div>
+            <div class="tb-row"><div class="tb-head"><span class="tb-name">Normalization</span><span class="tb-pct" style="color:#FFB344;">68%</span></div><div class="progress-track"><div class="progress-fill" style="width:68%;background:#FFB344;"></div></div></div>
+            <div class="tb-row"><div class="tb-head"><span class="tb-name">ER Diagrams</span><span class="tb-pct" style="color:#34D399;">88%</span></div><div class="progress-track"><div class="progress-fill" style="width:88%;background:#34D399;"></div></div></div>
+            <div class="tb-row"><div class="tb-head"><span class="tb-name">SQL Advanced</span><span class="tb-pct" style="color:#7C6EFF;">55%</span></div><div class="progress-track"><div class="progress-fill" style="width:55%;"></div></div></div>
+          </div>
+          <div class="ai-strip">
+            <div class="ai-icon">🎯</div>
+            <div>
+              <div class="ai-label">AI Coach</div>
+              <div class="ai-text">Focus on Transactions today — 15% of your exam but only 42% confident.</div>
+            </div>
+          </div>
+        </div>
+        <div class="scan-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar" style="position:relative;z-index:1;">
+    <div class="stats-inner">
+      <div class="stat"><div class="stat-val" style="color:#7C6EFF;">2,400+</div><div class="stat-label">Students using StudySniper</div></div>
+      <div class="stat"><div class="stat-val" style="color:#34D399;">89%</div><div class="stat-label">Students improved exam scores</div></div>
+      <div class="stat"><div class="stat-val" style="color:#00E5B4;">3.2×</div><div class="stat-label">Faster topic coverage</div></div>
+      <div class="stat"><div class="stat-val" style="color:#FFB344;">12 min</div><div class="stat-label">Average setup time</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="tag tag-accent" style="margin-bottom:16px;"><span class="dot anim"></span> Core features</span>
+      <h2 class="section-title">Everything you need to <span class="gradient-text">dominate your exam</span></h2>
+      <p class="section-sub">Not just a planner. An AI study operating system that thinks ahead, detects your gaps, and builds the perfect strategy for your specific exam.</p>
+    </div>
+    <div class="features-grid reveal">
+      <div class="feat-card"><div class="feat-icon-wrap" style="background:rgba(124,110,255,0.12);">🎯</div><div class="feat-title">AI Topic Prioritization</div><p class="feat-desc">Claude classifies every topic into Master It, Cram It, Skim It, or Skip It based on weightage, difficulty, and your confidence.</p><div class="feat-tags"><span class="feat-tag" style="background:#7C6EFF15;color:#7C6EFF;border-color:#7C6EFF30;">Marks weightage</span><span class="feat-tag" style="background:#7C6EFF15;color:#7C6EFF;border-color:#7C6EFF30;">Confidence score</span></div></div>
+      <div class="feat-card"><div class="feat-icon-wrap" style="background:rgba(0,229,180,0.1);">📅</div><div class="feat-title">Smart Study Scheduler</div><p class="feat-desc">Auto-generates a day-wise, hour-by-hour study plan with built-in breaks. Dynamically replans if you fall behind or miss sessions.</p><div class="feat-tags"><span class="feat-tag" style="background:#00E5B415;color:#00E5B4;border-color:#00E5B430;">Hour-by-hour plan</span><span class="feat-tag" style="background:#00E5B415;color:#00E5B4;border-color:#00E5B430;">Adaptive timeline</span></div></div>
+      <div class="feat-card"><div class="feat-icon-wrap" style="background:rgba(255,76,94,0.1);">🚨</div><div class="feat-title">Exam Survival Mode</div><p class="feat-desc">When the exam is near, AI switches to emergency mode showing only high-impact topics, fast revision roadmaps, and probable questions.</p><div class="feat-tags"><span class="feat-tag" style="background:#FF4C5E15;color:#FF4C5E;border-color:#FF4C5E30;">Emergency mode</span><span class="feat-tag" style="background:#FF4C5E15;color:#FF4C5E;border-color:#FF4C5E30;">Probable questions</span></div></div>
+      <div class="feat-card"><div class="feat-icon-wrap" style="background:rgba(255,179,68,0.1);">🔍</div><div class="feat-title">AI Weakness Detector</div><p class="feat-desc">Detects your weak topics and low-confidence areas automatically. Schedules extra revision exactly where you need it most.</p><div class="feat-tags"><span class="feat-tag" style="background:#FFB34415;color:#FFB344;border-color:#FFB34430;">Gap analysis</span><span class="feat-tag" style="background:#FFB34415;color:#FFB344;border-color:#FFB34430;">Auto revision</span></div></div>
+      <div class="feat-card"><div class="feat-icon-wrap" style="background:rgba(124,110,255,0.12);">📄</div><div class="feat-title">PDF Intelligence</div><p class="feat-desc">Upload syllabus, notes, and past papers. AI extracts important questions, repeated concepts, formula sheets, and key definitions.</p><div class="feat-tags"><span class="feat-tag" style="background:#7C6EFF15;color:#7C6EFF;border-color:#7C6EFF30;">Key concepts</span><span class="feat-tag" style="background:#7C6EFF15;color:#7C6EFF;border-color:#7C6EFF30;">Past papers</span></div></div>
+      <div class="feat-card"><div class="feat-icon-wrap" style="background:rgba(52,211,153,0.1);">🔄</div><div class="feat-title">Smart Revision Engine</div><p class="feat-desc">Uses spaced repetition science — schedules each topic for Day 1, Day 3, Day 7, and pre-exam reviews so nothing slips through.</p><div class="feat-tags"><span class="feat-tag" style="background:#34D39915;color:#34D399;border-color:#34D39930;">Spaced repetition</span><span class="feat-tag" style="background:#34D39915;color:#34D399;border-color:#34D39930;">4-stage system</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="tag tag-accent" style="margin-bottom:16px;"><span class="dot anim"></span> How it works</span>
+      <h2 class="section-title">From zero to exam-ready <span class="gradient-text">in 12 minutes</span></h2>
+      <p class="section-sub">StudySniper does the heavy lifting so you can focus on actually studying.</p>
+    </div>
+    <div class="how-grid reveal">
+      <div class="steps-wrap">
+        <div class="step"><div class="step-num-col"><div class="step-num" style="background:rgba(124,110,255,0.12);color:#7C6EFF;">01</div><div class="step-line"></div></div><div class="step-content"><div class="step-header"><span class="step-icon">📝</span><h3 class="step-title">Add your subjects & topics</h3></div><p class="step-desc">Enter your subjects, set the exam date, and rate your confidence level for each topic. Takes less than 5 minutes.</p></div></div>
+        <div class="step"><div class="step-num-col"><div class="step-num" style="background:rgba(0,229,180,0.1);color:#00E5B4;">02</div><div class="step-line"></div></div><div class="step-content"><div class="step-header"><span class="step-icon">📄</span><h3 class="step-title">Upload your study materials</h3></div><p class="step-desc">Drop in your syllabus PDFs, past question papers, and notes. AI extracts what matters and what's likely to appear.</p></div></div>
+        <div class="step"><div class="step-num-col"><div class="step-num" style="background:rgba(255,179,68,0.1);color:#FFB344;">03</div><div class="step-line"></div></div><div class="step-content"><div class="step-header"><span class="step-icon">🤖</span><h3 class="step-title">AI analyzes and prioritizes</h3></div><p class="step-desc">Claude classifies every topic based on weightage, your confidence, and days remaining. You get a precision-targeted plan.</p></div></div>
+        <div class="step"><div class="step-num-col"><div class="step-num" style="background:rgba(255,76,94,0.1);color:#FF4C5E;">04</div><div class="step-line"></div></div><div class="step-content"><div class="step-header"><span class="step-icon">📅</span><h3 class="step-title">Follow your smart schedule</h3></div><p class="step-desc">A daily hour-by-hour schedule is generated. Miss a session? The plan auto-adapts so you're always on track.</p></div></div>
+        <div class="step"><div class="step-num-col"><div class="step-num" style="background:rgba(52,211,153,0.1);color:#34D399;">05</div></div><div class="step-content"><div class="step-header"><span class="step-icon">🎯</span><h3 class="step-title">Track, adapt, and win</h3></div><p class="step-desc">Monitor your readiness score, get AI coaching on weak spots, and activate Survival Mode when the exam gets close.</p></div></div>
+      </div>
+      <!-- Right side visual -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="glass" style="border-radius:20px;padding:20px;">
+          <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Exam readiness score</div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:80px;height:80px;border-radius:50%;border:3px solid #7C6EFF;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <span style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#7C6EFF;">68%</span>
+            </div>
+            <div>
+              <div style="font-size:13px;color:var(--sub);margin-bottom:8px;">Improving daily. 3 high-priority topics remaining.</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(255,179,68,0.12);color:#FFB344;border:1px solid rgba(255,179,68,0.25);">Moderate risk</span>
+                <span style="font-size:10px;padding:2px 8px;border-radius:100px;background:rgba(52,211,153,0.1);color:#34D399;border:1px solid rgba(52,211,153,0.2);">↑ 4% today</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="glass" style="border-radius:20px;padding:20px;">
+          <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Today's schedule</div>
+          <div style="display:flex;flex-direction:column;gap:0;">
+            <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);width:60px;flex-shrink:0;">9:00 AM</span><div style="width:3px;height:28px;background:#7C6EFF;border-radius:2px;flex-shrink:0;"></div><span style="font-size:12px;color:var(--sub);">ER Diagrams review</span><span style="margin-left:auto;font-size:11px;color:var(--muted);">1.5h</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);width:60px;flex-shrink:0;">10:45 AM</span><div style="width:3px;height:28px;background:#7C6EFF;border-radius:2px;flex-shrink:0;"></div><span style="font-size:12px;color:var(--sub);">Normalization</span><span style="margin-left:auto;font-size:11px;color:var(--muted);">1.5h</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:8px 0;"><span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);width:60px;flex-shrink:0;">1:00 PM</span><div style="width:3px;height:28px;background:#FF4C5E;border-radius:2px;flex-shrink:0;"></div><span style="font-size:12px;color:var(--sub);">Transactions mastery</span><span style="margin-left:auto;font-size:11px;color:var(--muted);">2h</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── GAMIFICATION ── -->
+<section class="section" id="gamification">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="tag tag-warn" style="margin-bottom:16px;"><span class="dot anim" style="background:#FFB344;"></span> Gamification</span>
+      <h2 class="section-title">Study like a game. <span class="gradient-warm">Win like a champion.</span></h2>
+      <p class="section-sub">XP points, daily streaks, achievement badges, and leaderboards keep you motivated even on your laziest days.</p>
+    </div>
+    <div class="gami-grid reveal">
+      <!-- XP -->
+      <div class="gami-card">
+        <div class="gami-label">Your XP progress</div>
+        <div class="xp-num">2,840</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">XP earned this week</div>
+        <div style="display:flex;flex-direction:column;gap:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span style="font-size:12px;color:var(--sub);">Study session completed</span><span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:#7C6EFF;">+50 XP</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span style="font-size:12px;color:var(--sub);">Topic marked confident</span><span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:#34D399;">+25 XP</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);"><span style="font-size:12px;color:var(--sub);">Daily streak maintained</span><span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:#FF4C5E;">+100 XP</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;"><span style="font-size:12px;color:var(--sub);">Revision quiz aced</span><span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:#FFB344;">+75 XP</span></div>
+        </div>
+        <div style="margin-top:16px;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;"><span style="color:var(--muted);">Next level: 3,000 XP</span><span style="color:#7C6EFF;font-family:'JetBrains Mono',monospace;">94%</span></div><div class="progress-track"><div class="progress-fill" style="width:94%;"></div></div></div>
+      </div>
+      <!-- Badges -->
+      <div class="gami-card">
+        <div class="gami-label">Achievement badges</div>
+        <div class="badges-grid">
+          <div class="badge-item" style="background:rgba(255,76,94,0.08);border-color:rgba(255,76,94,0.3);"><div class="badge-icon">🔥</div><div class="badge-name">7-Day Streak</div></div>
+          <div class="badge-item" style="background:rgba(255,179,68,0.08);border-color:rgba(255,179,68,0.3);"><div class="badge-icon">⚡</div><div class="badge-name">Speed Runner</div></div>
+          <div class="badge-item" style="background:rgba(124,110,255,0.08);border-color:rgba(124,110,255,0.3);"><div class="badge-icon">🎯</div><div class="badge-name">Sniper Precision</div></div>
+          <div class="badge-item" style="background:transparent;border-color:rgba(255,255,255,0.06);opacity:0.4;filter:grayscale(1);"><div class="badge-icon">📚</div><div class="badge-name">Deep Diver</div></div>
+          <div class="badge-item" style="background:transparent;border-color:rgba(255,255,255,0.06);opacity:0.4;filter:grayscale(1);"><div class="badge-icon">🏆</div><div class="badge-name">Exam Conqueror</div></div>
+          <div class="badge-item" style="background:transparent;border-color:rgba(255,255,255,0.06);opacity:0.4;filter:grayscale(1);"><div class="badge-icon">🌙</div><div class="badge-name">Night Owl</div></div>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:12px;">3 of 6 badges earned</div>
+      </div>
+      <!-- Leaderboard -->
+      <div class="gami-card">
+        <div class="gami-label">Weekly leaderboard</div>
+        <div class="lb-row" style="background:transparent;"><div class="lb-rank" style="color:#FFB344;">🥇</div><div class="lb-av" style="background:#00E5B4;">AK</div><div class="lb-name">Ananya K.</div><div class="lb-xp">8,420 XP</div></div>
+        <div class="lb-row" style="background:transparent;"><div class="lb-rank" style="color:#9B97B8;">🥈</div><div class="lb-av" style="background:#7C6EFF;">RS</div><div class="lb-name">Rahul S.</div><div class="lb-xp">7,855 XP</div></div>
+        <div class="lb-row" style="background:rgba(124,110,255,0.08);border:1px solid rgba(124,110,255,0.2);border-radius:10px;"><div class="lb-rank" style="color:#FF9060;">🥉</div><div class="lb-av" style="background:#FFB344;">S</div><div class="lb-name">You <span style="font-size:10px;padding:1px 6px;border-radius:100px;background:rgba(124,110,255,0.2);color:#A99EFF;margin-left:4px;">you</span></div><div class="lb-xp">6,240 XP</div></div>
+        <div class="lb-row" style="background:transparent;"><div class="lb-rank" style="color:var(--muted);">4</div><div class="lb-av" style="background:#FF4C5E;">PM</div><div class="lb-name">Priya M.</div><div class="lb-xp">5,910 XP</div></div>
+        <div class="lb-row" style="background:transparent;"><div class="lb-rank" style="color:var(--muted);">5</div><div class="lb-av" style="background:#34D399;">KI</div><div class="lb-name">Karthik I.</div><div class="lb-xp">4,780 XP</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TESTIMONIALS ── -->
+<section class="section" id="testimonials">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="tag tag-safe" style="margin-bottom:16px;"><span class="dot anim" style="background:#34D399;"></span> Student stories</span>
+      <h2 class="section-title">Real students. <span class="gradient-text">Real results.</span></h2>
+      <p class="section-sub">From last-minute panics to confident top scores — here's what StudySniper users say.</p>
+    </div>
+    <div class="testi-grid reveal">
+      <div class="testi-card"><div class="stars-row"><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><p class="testi-quote">"I was completely lost 10 days before my DBMS exam. StudySniper showed me exactly what to focus on and what to skip. The Survival Mode is genuinely a lifesaver."</p><div class="testi-score-box"><div class="ts-val">+22 marks</div><div class="ts-label">in DBMS mid-sem</div></div><div class="testi-author"><div class="testi-av" style="background:#7C6EFF;">RS</div><div><div class="testi-name">Rahul Sharma</div><div class="testi-role">B.Tech CSE — VIT Vellore</div></div></div></div>
+      <div class="testi-card"><div class="stars-row"><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><p class="testi-quote">"The spaced repetition engine is what made the difference. I actually remembered everything on exam day. The AI coach explained concepts better than my professor!"</p><div class="testi-score-box"><div class="ts-val">94/100</div><div class="ts-label">in Data Structures</div></div><div class="testi-author"><div class="testi-av" style="background:#00E5B4;">AK</div><div><div class="testi-name">Ananya Krishnan</div><div class="testi-role">MCA — Manipal University</div></div></div></div>
+      <div class="testi-card"><div class="stars-row"><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><svg width="13" height="13" viewBox="0 0 24 24" fill="#FFB344"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><p class="testi-quote">"Out of 9 questions in my exam, 6 were predicted by StudySniper. Uploading my past papers and having AI extract probable questions was absolutely genius."</p><div class="testi-score-box"><div class="ts-val">AIR 342</div><div class="ts-label">GATE CS 2025</div></div><div class="testi-author"><div class="testi-av" style="background:#FF4C5E;">KI</div><div><div class="testi-name">Karthik Iyer</div><div class="testi-role">GATE aspirant</div></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<div class="cta-section" id="cta">
+  <div class="cta-box noise">
+    <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(124,110,255,0.04)1px,transparent 1px),linear-gradient(90deg,rgba(124,110,255,0.04)1px,transparent 1px);background-size:40px 40px;pointer-events:none;border-radius:28px;overflow:hidden;"></div>
+    <div class="scan-line"></div>
+    <div style="position:relative;z-index:1;">
+      <span class="tag tag-accent" style="margin-bottom:20px;display:inline-flex;"><span class="dot anim"></span> Start today — it's free</span>
+      <h2 class="cta-title">Your exam is coming.<br/><span class="gradient-text">Are you ready?</span></h2>
+      <p class="cta-sub">Stop guessing what to study. Let StudySniper's AI analyze your exam, prioritize your topics, and build your perfect study plan — in 12 minutes.</p>
+      <div class="cta-btns">
+        <button class="btn btn-primary" style="font-size:16px;padding:15px 36px;">Get started for free <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+        <button class="btn btn-ghost" style="font-size:16px;padding:15px 36px;">No credit card needed</button>
+      </div>
+      <div class="cta-checks">
+        <span class="cta-check">✓ Free to start</span>
+        <span class="cta-check">✓ AI-powered</span>
+        <span class="cta-check">✓ Works for any exam</span>
+        <span class="cta-check">✓ Mobile friendly</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo"><div class="logo-icon" style="width:28px;height:28px;font-size:14px;">🎯</div><div class="logo-text" style="font-size:15px;">Study<span>Sniper</span></div></div>
+        <p>AI-powered exam preparation platform for college students and competitive exam aspirants.</p>
+      </div>
+      <div><div class="footer-col-title">Product</div><div class="footer-links"><a>Features</a><a>How it works</a><a>Pricing</a><a>Changelog</a></div></div>
+      <div><div class="footer-col-title">Resources</div><div class="footer-links"><a>Documentation</a><a>API Reference</a><a>Blog</a><a>Community</a></div></div>
+      <div><div class="footer-col-title">Company</div><div class="footer-links"><a>About</a><a>Privacy Policy</a><a>Terms of Service</a><a>Contact</a></div></div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">© 2026 StudySniper. Built with ❤️ for students who refuse to fail.</span>
+      <div class="status"><div class="status-dot"></div> All systems operational</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Navbar scroll effect
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Typewriter
+const phrases = ["smarter, not harder", "with AI-powered focus", "and beat the exam", "like a top ranker"];
+let pi = 0, ci = 0, del = false;
+const el = document.getElementById('typewriter');
+
+function type() {
+  const phrase = phrases[pi];
+  if (!del && ci <= phrase.length) {
+    el.textContent = phrase.slice(0, ci++);
+    setTimeout(type, 65);
+  } else if (!del && ci > phrase.length) {
+    setTimeout(() => { del = true; type(); }, 1800);
+  } else if (del && ci >= 0) {
+    el.textContent = phrase.slice(0, ci--);
+    setTimeout(type, 32);
+  } else {
+    del = false; pi = (pi + 1) % phrases.length;
+    setTimeout(type, 200);
+  }
+}
+type();
+
+// Smooth scroll for nav links
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+</script>
+</body>
+</html>
