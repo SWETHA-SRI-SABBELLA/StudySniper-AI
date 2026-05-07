@@ -1,21 +1,41 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import LandingPage from "./pages/LandingPage";
-import Dashboard from "./pages/Dashboard";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+
+// Context
+import { AuthProvider } from "./context/AuthContext";
+
+// Components
+import PrivateRoute from "./components/PrivateRoute";
+
+// Pages
 import LoginPage from "./pages/LoginPage";
-import OnboardingPage from "./pages/OnboardingPage";
-import "./styles/globals.css";
+import DashboardPage from "./pages/DashboardPage";
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/"           element={<LandingPage />} />
-        <Route path="/login"      element={<LoginPage />} />
-        <Route path="/onboarding" element={<OnboardingPage />} />
-        <Route path="/dashboard"  element={<Dashboard />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+
+          {/* Public */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Protected */}
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <DashboardPage />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Default redirect */}
+          <Route path="/" element={<Navigate to="/login" />} />
+
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

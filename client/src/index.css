@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+}
+
+.bg-sniper-bg {
+  background: #0f172a;
+}
+
+.text-sniper-text {
+  color: white;
+}
+
+.text-sniper-muted {
+  color: #94a3b8;
+}
+
+.btn-primary {
+  background: #7c3aed;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: white;
+  border: 1px solid #334155;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.input-dark {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: white;
+}
+
+.glass {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px);
+}
+
+.font-display {
+  font-weight: bold;
+}
